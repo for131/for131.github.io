@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生日祝福</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .wish {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: popup 3s ease-out forwards;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        @keyframes popup {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.5);
+            }
+
+            20% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            80% {
+                opacity: 1;
+                transform: translateY(-10px) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.8);
+            }
+        }
+
+        .music-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .music-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .music-btn.playing {
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .start-btn {
+            padding: 20px 50px;
+            font-size: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .upload-area {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        .upload-label {
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .upload-label:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tip {
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 20px;
+            font-size: 14px;
+            max-width: 400px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="start-overlay" id="startOverlay">
+        <button class="start-btn" onclick="startWithoutMusic()">🎂 点击开始生日祝福 🎂</button>
+    </div>
+
+    <button class="music-btn" id="musicBtn" onclick="toggleMusic()" style="display: none;">🎵</button>
+
+    <audio id="bgMusic" loop preload="auto">
+        <source src="https://sf5-hl-cdn-tos.douyinstatic.com/obj/ies-music/7538982702662699786.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const wishes = [
+            "生日快乐！🎂", "愿你天天开心！✨", "永远快乐！🎉", "年年有今日！🎈",
+            "岁岁有今朝！🌟", "越来越好！💫", "心想事成！🎁", "万事如意！🌈",
+            "幸福安康！🍀", "笑口常开！😊", "青春永驻！🌸", "前程似锦！🎯",
+            "梦想成真！💝", "福星高照！⭐", "好运连连！🎊", "喜事多多！🎀",
+            "健康平安！🌺", "快乐无边！🦋", "美梦成真！🌙", "幸福满满！💖",
+            "事业有成！🏆", "步步高升！📈", "财源广进！💰", "一帆风顺！⛵",
+            "龙马精神！🐉", "虎虎生威！🐯", "如意吉祥！🎐", "花开富贵！🌹",
+            "金榜题名！📚", "才华横溢！🎨", "聪明伶俐！🧠", "美丽动人！👑",
+            "英俊潇洒！🤴", "温柔善良！🕊️", "勇敢坚强！💪", "快乐成长！🌱",
+            "梦想成真！🌠", "星光璀璨！✨", "阳光灿烂！☀️", "春风得意！🍃",
+            "锦绣前程！🎭", "大展宏图！🗺️", "鹏程万里！🦅", "龙腾虎跃！🐲",
+            "马到成功！🐎", "喜气洋洋！🧧", "欢天喜地！🎪", "笑逐颜开！🌻",
+            "眉开眼笑！😄", "心花怒放！🌺","生日快乐！🎂", "愿你天天开心！✨", "永远快乐！🎉", "年年有今日！🎈",
+            "岁岁有今朝！🌟", "越来越好！💫", "心想事成！🎁", "万事如意！🌈",
+            "幸福安康！🍀", "笑口常开！😊", "青春永驻！🌸", "前程似锦！🎯",
+            "梦想成真！💝", "福星高照！⭐", "好运连连！🎊", "喜事多多！🎀",
+            "健康平安！🌺", "快乐无边！🦋", "美梦成真！🌙", "幸福满满！💖",
+            "事业有成！🏆", "步步高升！📈", "财源广进！💰", "一帆风顺！⛵",
+            "龙马精神！🐉", "虎虎生威！🐯", "如意吉祥！🎐", "花开富贵！🌹",
+            "金榜题名！📚", "才华横溢！🎨", "聪明伶俐！🧠", "美丽动人！👑",
+            "英俊潇洒！🤴", "温柔善良！🕊️", "勇敢坚强！💪", "快乐成长！🌱",
+            "梦想成真！🌠", "星光璀璨！✨", "阳光灿烂！☀️", "春风得意！🍃",
+            "锦绣前程！🎭", "大展宏图！🗺️", "鹏程万里！🦅", "龙腾虎跃！🐲",
+            "马到成功！🐎", "喜气洋洋！🧧", "欢天喜地！🎪", "笑逐颜开！🌻",
+            "眉开眼笑！😄", "心花怒放！🌺"
+        ];
+
+        const colors = [
+            '#FFD700', '#FF69B4', '#87CEEB', '#98FB98', '#FFA500', '#FF6B6B',
+            '#4ECDC4', '#FFE66D', '#FF8ED4', '#6BCF7F', '#A8E6CF', '#FFDAC1',
+            '#B4A7D6', '#FFB6C1', '#DDA0DD', '#F0E68C'
+        ];
+
+        let wishInterval;
+        const music = document.getElementById('bgMusic');
+        const musicBtn = document.getElementById('musicBtn');
+
+        function createWish() {
+            const wish = document.createElement('div');
+            wish.className = 'wish';
+            wish.textContent = wishes[Math.floor(Math.random() * wishes.length)];
+            wish.style.left = Math.random() * (window.innerWidth - 200) + 'px';
+            wish.style.top = Math.random() * (window.innerHeight - 100) + 100 + 'px';
+            wish.style.color = colors[Math.floor(Math.random() * colors.length)];
+            wish.style.fontSize = (Math.random() * 20 + 20) + 'px';
+
+            document.body.appendChild(wish);
+
+            setTimeout(() => {
+                wish.remove();
+            }, 3000);
+        }
+
+        function startWithoutMusic() {
+            document.getElementById('startOverlay').style.display = 'none';
+            musicBtn.style.display = 'flex';
+
+            // 等待音乐加载完成后播放
+            music.addEventListener('canplaythrough', function () {
+                music.play().then(() => {
+                    musicBtn.classList.add('playing');
+                    console.log('音乐开始播放');
+                }).catch(err => {
+                    console.log('音乐播放失败:', err);
+                });
+            }, { once: true });
+
+            // 立即尝试加载音乐
+            music.load();
+
+            // 初始爆发 - 增加数量和密度
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => createWish(), i * 50);
+            }
+
+            // 持续弹出 - 减少间隔时间，让祝福更密集
+            wishInterval = setInterval(() => {
+                createWish();
+                // 额外创建更多祝福
+                setTimeout(() => createWish(), 100);
+                setTimeout(() => createWish(), 200);
+            }, 150);
+        }
+
+        function toggleMusic() {
+            if (music.paused) {
+                music.play();
+                musicBtn.classList.add('playing');
+                musicBtn.textContent = '🎵';
+            } else {
+                music.pause();
+                musicBtn.classList.remove('playing');
+                musicBtn.textContent = '🔇';
+            }
+        }
+    </script>
+</body>
+
+</html>
